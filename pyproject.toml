@@ -1,0 +1,45 @@
+[project]
+name = "caifeng"
+version = "0.2.0"
+description = "采风：从网站下载视频、小说和剧集"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    { name = "xxa" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "av>=19.0.1",
+    "playwright>=1.63.0",
+    "pywebview>=6.2.1",
+]
+
+[project.gui-scripts]
+caifeng = "caifeng.__main__:main"
+
+[dependency-groups]
+dev = [
+    "pyinstaller>=6.22.3",
+    "pytest>=8",
+    "ruff>=0.6",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.7,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM"]
+
+
+[tool.ruff.lint.per-file-ignores]
+# 站点模块里内嵌在页面执行的 JS，保持原样更好对照
+"src/caifeng/sites/*.py" = ["E501", "UP031"]

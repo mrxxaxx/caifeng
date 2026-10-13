@@ -1,0 +1,30 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# 密钥
+.env
+
+# 测试与工具缓存
+.pytest_cache/
+.ruff_cache/
+
+# 根目录下的临时截图（image.png、image copy.png……）
+/image*.png
+
+# 没下完的文件、日志
+*.part
+*.log
+
+# 编辑器和系统文件
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini

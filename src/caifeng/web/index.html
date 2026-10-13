@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>采风</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+
+<!-- 首页 -->
+<div class="screen" id="home">
+  <div class="hero hero-w">
+    <!-- 那句话沿风纹飘进来，末尾卷成旋，旋下落款 -->
+    <svg class="wind-text" viewBox="0 0 900 170" aria-hidden="true">
+      <path id="windpath" d="M10 120 C130 120 200 74 320 74 S470 104 540 104 H580"/>
+      <use id="wind-under" href="#windpath" transform="translate(0 9)"/>  <!-- 文字下方托着的实线 -->
+      <text id="wind-line"><textPath href="#windpath" startOffset="2%">把看到的、听到的，整理成创作素材</textPath></text>
+      <!-- 旋和落款：坐标以旋的起点为原点，由 app.js 接在实线末端 -->
+      <g id="wind-curl">
+        <path class="curl wind-draw" d="M0 0 H22 C72 0 90 -30 72 -52 C56 -68 24 -60 26 -34 C28 -16 52 -12 64 -22"/>
+        <text class="sign" x="49" y="30" text-anchor="middle">Powered by 徐徐</text>
+      </g>
+    </svg>
+    <div class="home-tools">
+      <button class="btn sm hidden" id="update-pill" title="打开发布页下载新版本"></button>
+      <button class="icon-btn" title="关于" data-go="about"><svg class="i"><use href="#i-info"/></svg></button>
+      <button class="icon-btn" title="通用设置" data-go="settings"><svg class="i"><use href="#i-gear"/></svg></button>
+    </div>
+  </div>
+
+  <nav class="sources" aria-label="下载来源">
+    <button class="source" data-go="video">
+      <span class="src-name">视频</span>
+      <span class="src-desc">粘贴分享口令或链接，下载视频和图文：抖音、快手、小红书、哔哩哔哩、豆包</span>
+      <span class="side" data-login-side="video"></span>
+    </button>
+    <button class="source" data-go="fanqie">
+      <span class="src-name">番茄</span>
+      <span class="src-desc">番茄达人中心的小说章节，短剧和漫剧的免费集</span>
+      <span class="side" data-login-side="fanqie"></span>
+    </button>
+  </nav>
+</div>
+
+<!-- 视频：下载列表 -->
+<div class="screen hidden" id="video" data-tool="video">
+  <div class="tool-head">
+    <button class="icon-btn" title="返回" data-go="home"><svg class="i"><use href="#i-back"/></svg></button>
+    <h2>视频</h2><span class="sub">抖音、快手、小红书、哔哩哔哩、豆包</span>
+    <div class="right">
+      <span data-login-state></span>
+      <button class="btn sm" id="video-clip">解析剪贴板</button>
+      <div class="dropdown">
+        <button class="btn sm" data-login-btn></button>
+        <div class="menu" id="open-menu"></div>
+      </div>
+      <button class="btn sm" data-grab disabled title="先用「在浏览器打开」打开一个平台">解析当前页</button>
+    </div>
+  </div>
+  <div class="card add-bar">
+    <textarea class="field" id="video-link" rows="3" spellcheck="false"
+      placeholder="粘贴分享口令或链接，可以一次贴好几段，回车解析（Shift + 回车换行）"></textarea>
+    <button class="btn primary" id="video-add">解析</button>
+  </div>
+  <div class="card task-list" id="tasks"></div>
+  <div class="list-foot">
+    <span class="muted">保存到</span>
+    <span class="path" id="video-dir"></span>
+    <button class="btn sm" id="video-dir-pick">更改…</button>
+    <button class="btn sm" id="video-dir-open">打开文件夹</button>
+    <button class="btn sm" id="video-clear">清除已完成</button>
+  </div>
+</div>
+
+<!-- 番茄达人中心 -->
+<div class="screen hidden" id="fanqie" data-tool="fanqie">
+  <div class="tool-head">
+    <button class="icon-btn" title="返回" data-go="home"><svg class="i"><use href="#i-back"/></svg></button>
+    <h2>番茄</h2><span class="sub">下载小说章节、短剧和漫剧剧集</span>
+    <div class="right"><span data-login-state></span><button class="btn sm" data-login-btn></button></div>
+  </div>
+  <div class="card panel">
+    <div class="fgrid">
+      <label>BookID</label>
+      <input class="field" id="fq-id" placeholder="留空则取浏览器当前打开的详情页">
+      <button class="btn" data-grab>取当前页</button>
+
+      <label>类型</label>
+      <div class="seg" id="fq-kind"><button data-v="novel">小说</button><button data-v="drama">短剧</button><button data-v="comic">漫剧</button></div>
+      <span></span>
+
+      <label class="novel-only">范围</label>
+      <div class="inline novel-only">
+        <div class="seg" id="fq-scope"><button data-v="free">免费章节</button><button data-v="all">全部章节</button></div>
+        <span class="muted small" style="margin-left:10px">间隔</span>
+        <input class="field sm" id="fq-delay" style="width:64px">
+        <span class="muted small">秒</span>
+      </div>
+      <span class="novel-only"></span>
+
+      <label class="video-only">集数</label>
+      <div class="inline video-only">
+        <div class="seg" id="fq-ep-mode"><button data-v="all">全部</button><button data-v="range">指定</button></div>
+        <span class="muted small" style="margin-left:6px">第</span>
+        <input class="field sm num" id="fq-ep-from" type="number" min="1" value="1">
+        <span class="muted small">到</span>
+        <input class="field sm num" id="fq-ep-to" type="number" min="1" placeholder="最后一集" style="width:96px">
+        <span class="muted small">集</span>
+        <span class="muted small" id="fq-ep-total" style="margin-left:8px"></span>
+      </div>
+      <span class="video-only"></span>
+
+      <span class="error-slot hidden"></span>
+      <div class="ep-error hidden" id="fq-ep-error"></div>
+      <span class="error-slot hidden"></span>
+
+      <label class="video-only">保存方式</label>
+      <div class="seg video-only" id="fq-mode"><button data-v="split">分集保存</button><button data-v="merge">合并保存</button><button data-v="both">两者都要</button></div>
+      <span class="video-only"></span>
+
+      <label>保存到</label>
+      <input class="field" data-save-dir>
+      <button class="btn" data-pick-dir>选择…</button>
+    </div>
+    <div class="actions"><button class="btn primary" data-run>下载</button></div>
+  </div>
+  <div class="card panel progress-card">
+    <div class="progress-top"><b>进度</b><span class="small muted" data-pct></span></div>
+    <div class="progress"><i data-bar></i></div>
+    <div class="log" data-log><span class="muted">还没有开始</span></div>
+    <div class="result hidden" data-result></div>
+  </div>
+</div>
+
+<!-- 通用设置 -->
+<div class="screen hidden" id="settings">
+  <div class="tool-head">
+    <button class="icon-btn" title="返回" data-back><svg class="i"><use href="#i-back"/></svg></button>
+    <h2>通用设置</h2><span class="sub">所有工具共用</span>
+  </div>
+  <div class="card set-card">
+    <div class="set-row">
+      <div><div>浏览器</div><div class="hint" id="set-browser-hint">切换后番茄达人中心需要重新登录</div></div>
+      <div class="select"><select class="field" id="set-browser"></select></div>
+    </div>
+    <div class="set-row">
+      <div><div>外观</div><div class="hint">跟随系统时随 Windows 深浅色切换</div></div>
+      <div class="seg" id="set-look"><button data-v="system">跟随系统</button><button data-v="light">浅色</button><button data-v="dark">深色</button></div>
+    </div>
+    <div class="set-row">
+      <div><div>豆包视频获取无水印版本</div><div class="hint">下载豆包视频不带「豆包AI生成」标识的版本</div></div>
+      <div class="seg" id="set-nomark"><button data-v="off">关闭</button><button data-v="on">开启</button></div>
+    </div>
+    <div class="set-row">
+      <div><div>输出目录</div><div class="hint">各工具在里面建自己的文件夹</div></div>
+      <div class="inline"><input class="field" id="set-output"><button class="btn" id="set-output-pick">选择…</button></div>
+    </div>
+    <div class="set-row">
+      <div><div>数据目录</div><div class="hint">各网站的登录数据</div></div>
+      <div class="inline"><input class="field" id="set-data" disabled><button class="btn" id="set-data-pick">更改…</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- 关于 -->
+<div class="screen hidden" id="about">
+  <div class="tool-head">
+    <button class="icon-btn" title="返回" data-back><svg class="i"><use href="#i-back"/></svg></button>
+    <h2>关于</h2>
+  </div>
+  <div class="card about-card">
+    <div class="about-name">采风 <span class="muted" id="about-version"></span>
+      <button class="btn sm" id="about-update">检查更新</button><span class="small muted" id="about-update-msg"></span></div>
+    <div class="muted">把看到的、听到的，整理成创作素材。从平台采集视频、小说和剧集。</div>
+    <div class="about-meta">
+      <div class="about-links" id="about-links">
+        <button class="btn sm" data-path=""><svg class="i"><use href="#i-github"/></svg>GitHub</button>
+        <button class="btn sm" data-path="/issues"><svg class="i"><use href="#i-issue"/></svg>Issues</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card thanks">
+    <div>感谢开源项目：</div>
+    <div class="chips">
+      <button class="chip" data-url="https://github.com/r0x0r/pywebview">pywebview</button>
+      <button class="chip" data-url="https://github.com/microsoft/playwright-python">Playwright</button>
+      <button class="chip" data-url="https://github.com/PyAV-Org/PyAV">PyAV</button>
+      <button class="chip" data-url="https://ffmpeg.org">FFmpeg</button>
+      <button class="chip" data-url="https://pyinstaller.org">PyInstaller</button>
+      <button class="chip" data-url="https://jrsoftware.org/isinfo.php">Inno Setup</button>
+    </div>
+  </div>
+  <div class="card disclaimer">
+    <div>免责声明</div>
+    <p>使用前请阅读：</p>
+    <ol>
+      <li>本软件仅供个人学习与研究使用，<span class="key">不得用于商业用途或任何非法用途</span>。</li>
+      <li>本软件与抖音、快手、小红书、哔哩哔哩、豆包、番茄小说等平台没有任何关联，也未获得其授权。</li>
+      <li>下载内容的版权归原作者所有，本软件未获得任何授权，请勿用于任何侵权用途。</li>
+      <li>开启「获取无水印版本」后，发布或传播相关内容时须自行标注为 AI 生成。</li>
+      <li>使用本软件产生的<span class="key">一切后果由使用者自行承担</span>，作者不承担任何责任。</li>
+    </ol>
+  </div>
+  <div class="about-foot">Powered by 徐徐</div>
+</div>
+
+<!-- 视频：解析对话框。解析完只有一个视频就直接下，多个让挑 -->
+<div class="modal hidden" id="parsedlg">
+  <div class="card modal-box parse-box">
+    <h3>解析</h3>
+    <div class="small muted dlg-text" id="parse-sub"></div>
+    <div class="progress"><i id="parse-bar"></i></div>
+    <label class="choose-all hidden" id="parse-all-row"><input type="checkbox" id="parse-all" checked> 全选</label>
+    <div class="parse-list" id="parse-list"></div>
+    <div class="dlg-actions">
+      <button class="btn" id="parse-cancel">取消</button>
+      <button class="btn primary" id="parse-go" disabled>下载所选</button>
+    </div>
+  </div>
+</div>
+
+<!-- 番茄：没登录（视频不用登录，这里只在没装浏览器时提示安装）-->
+<div class="modal hidden" id="logindlg">
+  <div class="card modal-box">
+    <h3 id="login-title"></h3>
+    <div class="small muted dlg-text" id="login-text"></div>
+    <div class="dlg-actions">
+      <button class="btn" id="login-back">返回</button>
+      <button class="btn primary" id="login-go">去登录</button>
+    </div>
+  </div>
+</div>
+
+<!-- 启动时每次都弹免责声明（内容从关于页复制过来），不同意就退出 -->
+<div class="modal hidden" id="noticedlg">
+  <div class="card modal-box notice-box">
+    <h3>免责声明</h3>
+    <div class="notice-terms" id="notice-terms"></div>
+    <div class="dlg-actions">
+      <button class="btn" id="notice-no">不同意</button>
+      <button class="btn primary" id="notice-ok">同意并继续</button>
+    </div>
+  </div>
+</div>
+
+<!-- 打开「豆包视频获取无水印版本」前的说明，确认了才打开 -->
+<div class="modal hidden" id="nomarkdlg">
+  <div class="card modal-box">
+    <h3>获取豆包视频的无水印版本</h3>
+    <div class="small muted dlg-text">
+      <p>按照《人工智能生成合成内容标识办法》，AI 生成的视频应当带有「AI 生成」标识。开启后，采风会获取不带标识的版本。</p>
+      <p>请注意：</p>
+      <ol>
+        <li>会获取无水印版本，但不会去除隐藏标识。</li>
+        <li>下载的内容仅供你个人学习、研究使用。</li>
+        <li>如需发布或传播，你<span class="key">必须主动声明内容为 AI 生成</span>，并使用发布平台提供的标识功能进行标识。</li>
+        <li>因未按规定标识导致公众混淆或误认的，<span class="key">后果和责任由你自行承担</span>。</li>
+      </ol>
+    </div>
+    <div class="dlg-actions">
+      <button class="btn" id="nomark-cancel">取消</button>
+      <button class="btn primary" id="nomark-go">我已了解，开启</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="7.8" r=".6" fill="currentColor"/></symbol>
+  <symbol id="i-github" viewBox="0 0 16 16"><path fill="currentColor" stroke="none" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></symbol>
+  <symbol id="i-issue" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1.5"/></symbol>
+  <symbol id="i-retry" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-guest" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 11.5-4.2"/><path d="M16 13l3-3 3 3"/><path d="M19 10v10"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+</svg>
+
+<script src="app.js"></script>
+</body>
+</html>

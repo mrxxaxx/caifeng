@@ -1,0 +1,61 @@
+# 推 v* 标签时：跑测试，打包便携版和安装包，发到 Releases
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+env:  # 服务器的控制台不是中文编码，打印中文会出错
+  PYTHONUTF8: "1"
+  PYTHONIOENCODING: utf-8
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 要有历史和标签，才能列出和上一个版本之间的改动
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: 安装依赖
+        run: uv sync --locked
+
+      - name: 测试
+        run: uv run pytest -q
+
+      - name: 标签要和 pyproject.toml 里的版本号一致
+        shell: bash
+        run: |
+          version=$(uv run python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "标签是 $GITHUB_REF_NAME，版本号是 v$version"
+            exit 1
+          fi
+
+      - name: 安装 Inno Setup
+        shell: pwsh
+        run: |
+          Invoke-WebRequest https://github.com/jrsoftware/issrc/releases/download/is-7_1_0/innosetup-7.1.0-x64.exe -OutFile is.exe
+          Start-Process .\is.exe -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/ALLUSERS' -Wait
+          $iscc = Get-ChildItem "$env:ProgramFiles\Inno Setup *\ISCC.exe", "${env:ProgramFiles(x86)}\Inno Setup *\ISCC.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $iscc) { throw "Inno Setup 没装上" }
+          $iscc.DirectoryName >> $env:GITHUB_PATH
+
+      - name: 打包
+        run: uv run python scripts/build.py
+
+      - name: 生成发布说明
+        shell: bash
+        run: bash scripts/release_notes.sh "$GITHUB_REF_NAME" "$GITHUB_REPOSITORY" > notes.md
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          body_path: notes.md
+          files: |
+            dist/caifeng-v*-portable.exe
+            dist/caifeng-v*-setup.exe
