@@ -44,6 +44,8 @@ Name: "{autodesktop}\采风"; Filename: "{app}\caifeng.exe"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\caifeng.exe"; Description: "{cm:LaunchProgram,采风}"; Flags: nowait postinstall skipifsilent
+; 软件里点「立即更新」是静默安装（/SILENT），装好直接打开；--after-update 让新版等旧版退出
+Filename: "{app}\caifeng.exe"; Parameters: "--after-update"; Flags: nowait; Check: WizardSilent
 
 [Code]
 // 卸载完问一句要不要连设置、下载列表和登录数据一起删（默认的数据目录）

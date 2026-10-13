@@ -43,12 +43,62 @@ async function checkUpdate(manual) {
   if (r.ok) { update = r; renderUpdate(); }
   if (!manual) return;  // 自动检查失败就不打扰
   btn.disabled = false;
-  msg.innerHTML = r.newer ? `<a data-url="${esc(r.url)}">有新版本 v${esc(r.latest)}，去下载</a>` : esc(r.message);
+  msg.textContent = r.message;
+  if (r.newer) openUpdateDlg();
+}
+
+// 更新弹框：confirm 确认 → download 下载中 → install 正在安装（随后软件退出、换成新版）；出错是 error
+let updPhase = '';
+const MB = n => (n / 1048576).toFixed(1);
+
+async function openUpdateDlg() {
+  updShow('confirm', { busy: await api.busy_count() });
+  $('#updatedlg').classList.remove('hidden');
+}
+
+function updShow(phase, d = {}) {
+  updPhase = phase;
+  const v = 'v' + update.latest;
+  const put = (sel, text) => { $(sel).textContent = text; $(sel).classList.toggle('hidden', !text); };
+  $('#upd-title').textContent = { confirm: `发现新版本 ${v}`, download: `正在下载 ${v}`, error: '更新失败', install: `正在安装 ${v}` }[phase];
+  put('#upd-text', { confirm: `当前 v${state.version}。更新会下载新版本，装好后自动重新打开。`, error: d.message, install: '马上重新打开…' }[phase] || '');
+  put('#upd-warn', phase === 'confirm' && d.busy ? `有 ${d.busy} 个任务正在进行，更新会中断它们。` : '');
+  put('#upd-size', phase === 'download' ? '正在连接…' : '');
+  $('#upd-bar').classList.toggle('hidden', phase !== 'download' && phase !== 'install');
+  $('#upd-bar i').style.width = phase === 'install' ? '100%' : '0';
+  const [a, b] = { confirm: ['稍后', '立即更新'], download: ['', '取消下载'], error: ['关闭', '重试'], install: ['', ''] }[phase];
+  put('#upd-a', a);
+  put('#upd-b', b);
+  $('#upd-b').disabled = false;
+  $('#upd-b').classList.toggle('primary', phase !== 'download');
+}
+
+function onUpdateEvent(kind, d) {
+  if (kind === 'progress' && updPhase === 'download') {
+    const pct = d.total ? Math.floor(d.done * 100 / d.total) : 0;
+    $('#upd-bar i').style.width = pct + '%';
+    $('#upd-size').textContent = d.total ? `${pct}%（${MB(d.done)} / ${MB(d.total)} MB）` : `${MB(d.done)} MB`;
+  } else if (kind === 'error') updShow('error', d);
+  else if (kind === 'cancelled') $('#updatedlg').classList.add('hidden');
+  else if (kind === 'installing') updShow('install');
+}
+
+async function startUpdate() {
+  updShow('download');
+  const r = await api.start_update();
+  if (r.page) $('#updatedlg').classList.add('hidden');  // 直接跑代码：打开了发布页
+  else if (!r.ok) updShow('error', r);
 }
 
 function bindUpdate() {
-  $('#update-pill').addEventListener('click', () => api.open_url(update.url));
+  $('#update-pill').addEventListener('click', openUpdateDlg);
   $('#about-update').addEventListener('click', () => checkUpdate(true));
+  $('#upd-a').addEventListener('click', () => $('#updatedlg').classList.add('hidden'));  // 稍后 / 关闭
+  $('#upd-b').addEventListener('click', () => {
+    if (updPhase !== 'download') { startUpdate(); return; }  // 立即更新 / 重试
+    $('#upd-b').disabled = true;  // 取消下载：等后台停下来（cancelled 事件）再关
+    api.cancel_update();
+  });
   setTimeout(() => checkUpdate(false), 3000);  // 别和启动抢网络
 }
 
@@ -663,6 +713,7 @@ async function bindVideo() {
 // ---------------- 后台推来的事件 ----------------
 // Python 端调用 window.caifengEvent(站点, 事件名, 数据)
 window.caifengEvent = (tool, kind, d) => {
+  if (tool === 'update') { onUpdateEvent(kind, d); return; }
   if (kind === 'login') { renderLogin(tool, d.ok, d.waiting); onLogin(tool, d.ok, d.waiting); }
   else if (kind === 'grab') {
     if (d.id && tool === 'video') addLinks(d.id, false);
@@ -794,7 +845,19 @@ class MockApi {
   video_task() {}
   video_clear_done() {}
   async open_file() { return false; }
-  async check_update() { return { ok: true, newer: true, latest: '0.2.0', url: 'https://github.com/mrxxaxx/caifeng/releases', message: '有新版本 v0.2.0' }; }
+  async check_update() { return { ok: true, newer: true, latest: '0.3.0', url: 'https://github.com/mrxxaxx/caifeng/releases', message: '有新版本 v0.3.0', assets: {} }; }
+  async busy_count() { return 2; }
+  async start_update() {  // 预览：假装下载 70 MB
+    const total = 73400320;
+    let done = 0;
+    this.updTimer = setInterval(() => {
+      done = Math.min(total, done + 5242880);
+      caifengEvent('update', 'progress', { done, total });
+      if (done === total) { clearInterval(this.updTimer); caifengEvent('update', 'installing', {}); }
+    }, 300);
+    return { ok: true, message: '', page: false };
+  }
+  cancel_update() { clearInterval(this.updTimer); setTimeout(() => caifengEvent('update', 'cancelled', {}), 200); }
   fail(site) { caifengEvent(site, 'error', { message: '预览里不能下载' }); caifengEvent(site, 'busy', { on: false }); }
 }
 

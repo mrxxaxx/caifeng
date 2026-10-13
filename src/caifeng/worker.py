@@ -58,6 +58,7 @@ class SiteWorker(threading.Thread):
         self._profile_root = profile_root
         self._cmds: queue.Queue = queue.Queue()
         self._stop = threading.Event()  # 停止当前下载 / 等待登录
+        self.busy = False  # 正在执行命令（自动更新前提醒会中断）
         self._last_resolve = 0.0  # 上次开始解析链接的时间（time.monotonic）
         self._pw = None
         self._ctx = None
@@ -92,6 +93,7 @@ class SiteWorker(threading.Thread):
                     self._close()
                     self._close_dl()
                     return
+                self.busy = True
                 self.emit("busy", {"on": True})
                 try:
                     getattr(self, "cmd_" + cmd)(**kw)
@@ -100,6 +102,7 @@ class SiteWorker(threading.Thread):
                     if sys.stderr:  # 打包后的 exe 没有控制台，sys.stderr 是 None
                         traceback.print_exc()
                 finally:
+                    self.busy = False
                     self.emit("busy", {"on": False})
                     self._report_window()
 

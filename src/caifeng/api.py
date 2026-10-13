@@ -9,6 +9,7 @@ from __future__ import annotations
 import dataclasses
 import json
 import os
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -70,6 +71,8 @@ class Api:
         self._window = None  # 由 app.py 在创建窗口后设置
         self._workers: dict[str, SiteWorker] = {}
         self._tasks = None  # 短视频下载列表，第一次用时才建（会起一个下载线程）
+        self._update_stop = threading.Event()  # 取消下载新版
+        self._update_info: dict = {}  # 上次检查更新的结果（下载用里面的附件）
         self._parse: dict[str, Any] = {}  # 当前这次解析：id、还剩几个链接、解析出来的作品 {key: (链接, 作品)}
 
     def _attach(self, window) -> None:
@@ -152,8 +155,65 @@ class Api:
         return True
 
     def check_update(self) -> dict[str, Any]:
-        """查 GitHub 上的最新版本：{ok, newer, latest, url, message}，见 update.py。"""
-        return update.check()
+        """查 GitHub 上的最新版本：{ok, newer, latest, url, message, assets}，见 update.py。"""
+        r = update.check()
+        if r["ok"]:
+            self._update_info = r
+        return r
+
+    def busy_count(self) -> int:
+        """正在进行的任务数（视频下载、番茄下载），更新前提醒会被中断。"""
+        from caifeng import videotasks
+
+        n = sum(1 for w in self._workers.values() if w.busy)
+        if self._tasks is not None:
+            n += sum(1 for t in self._tasks.all() if t["status"] in videotasks.ACTIVE)
+        return n
+
+    def start_update(self) -> dict[str, Any]:
+        """「立即更新」：后台下载新版，进度用 update 事件推给界面（progress / error / cancelled / installing）。
+        直接跑代码时没有 exe 可换，打开发布页。返回 {ok, message, page}。"""
+        r = self._update_info or update.check()
+        if not r.get("newer"):
+            return {"ok": False, "message": r.get("message") or "已经是最新版本", "page": False}
+        kind = update.mode()
+        if not kind:
+            self.open_url(r["url"])
+            return {"ok": True, "message": "", "page": True}
+        asset = r["assets"].get(kind)
+        if not asset:
+            name = "安装包" if kind == "setup" else "便携版"
+            return {"ok": False, "message": f"v{r['latest']} 没有{name}，请到发布页下载", "page": False}
+        self._update_stop.clear()
+        threading.Thread(target=self._run_update, args=(kind, asset), daemon=True).start()
+        return {"ok": True, "message": "", "page": False}
+
+    def cancel_update(self) -> None:
+        self._update_stop.set()
+
+    def _run_update(self, kind: str, asset: dict) -> None:
+        import time
+
+        last = 0.0
+
+        def progress(done: int, total: int) -> None:
+            nonlocal last
+            if time.monotonic() - last >= 0.2 or done == total:  # 别把界面刷得太勤
+                last = time.monotonic()
+                self._emit("update", "progress", {"done": done, "total": total or asset.get("size", 0)})
+
+        dst = update.target(kind, asset["name"])
+        try:
+            if not update.download(asset["id"], dst, progress, self._update_stop.is_set):
+                self._emit("update", "cancelled", {})
+                return
+            self._emit("update", "installing", {})
+            update.launch(kind, dst)
+        except OSError as e:
+            self._emit("update", "error", {"message": f"下载失败：{getattr(e, 'reason', None) or e}"})
+            return
+        time.sleep(0.8)  # 让界面显示一下「正在安装」
+        self.quit()
 
     def open_url(self, url: str) -> None:
         import webbrowser

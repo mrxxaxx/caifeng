@@ -266,6 +266,21 @@
   </div>
 </div>
 
+<!-- 更新：先确认，点了「立即更新」才下载；下载时盖住整个界面，不能做别的 -->
+<div class="modal hidden" id="updatedlg">
+  <div class="card modal-box">
+    <h3 id="upd-title"></h3>
+    <div class="small muted dlg-text" id="upd-text"></div>
+    <div class="small hidden" id="upd-warn"></div>
+    <div class="progress hidden" id="upd-bar"><i></i></div>
+    <div class="small muted hidden" id="upd-size"></div>
+    <div class="dlg-actions">
+      <button class="btn" id="upd-a"></button>
+      <button class="btn primary" id="upd-b"></button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">

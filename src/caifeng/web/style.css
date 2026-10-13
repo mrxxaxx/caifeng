@@ -262,3 +262,7 @@ input[type="checkbox"] { accent-color: var(--primary); }
 .dropdown .menu button:hover { background: var(--hover); }
 .list-foot { display: flex; align-items: center; gap: 10px; padding: 12px 4px 0; font-size: 12px; }
 .list-foot .path { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 更新弹框 */
+#upd-warn { color: var(--danger); margin-top: 8px; }
+#upd-bar { margin: 16px 0 6px; }
