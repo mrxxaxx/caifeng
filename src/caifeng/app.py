@@ -5,7 +5,6 @@ from __future__ import annotations
 import sys
 import threading
 import time
-import winreg
 from importlib.resources import files
 from pathlib import Path
 
@@ -20,9 +19,25 @@ TITLE = f"采风 - v{__version__}"
 _mutex = None  # 进程活着就一直拿着，退出时系统自动释放
 
 
+def _single_instance_posix() -> bool:
+    """macOS：用锁文件挡住第二个实例（两个进程会抢同一份浏览器 profile）。拿到锁返回 False。"""
+    import fcntl
+
+    global _mutex
+    DEFAULT_ROOT.mkdir(parents=True, exist_ok=True)
+    _mutex = open(DEFAULT_ROOT / "caifeng.lock", "w")  # 一直开着，进程退出时系统自动释放锁  # noqa: SIM115
+    try:
+        fcntl.flock(_mutex, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return False
+    except OSError:
+        return True
+
+
 def _already_running(wait: float = 0) -> bool:
     """已经开着一个采风就把它切到前面，返回 True（两个进程会抢同一份浏览器 profile）。
     wait：自动更新后打开的新版，旧版正在退出，最多等这么多秒。"""
+    if sys.platform != "win32":
+        return _single_instance_posix()
     import ctypes
 
     global _mutex
@@ -47,6 +62,13 @@ def _already_running(wait: float = 0) -> bool:
 
 
 def _system_is_dark() -> bool:
+    if sys.platform == "darwin":  # macOS：深色模式时这个键是 "Dark"，浅色时读不到
+        import subprocess
+
+        r = subprocess.run(["defaults", "read", "-g", "AppleInterfaceStyle"], capture_output=True, text=True)
+        return r.stdout.strip() == "Dark"
+    import winreg
+
     try:
         key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize")
         return winreg.QueryValueEx(key, "AppsUseLightTheme")[0] == 0
@@ -90,4 +112,7 @@ def run() -> None:
     )
     api._attach(window)
     window.events.closed += api._shutdown  # 关窗口时顺手关掉后台打开的浏览器
-    webview.start(gui="edgechromium", http_server=True)
+    if sys.platform == "win32":
+        webview.start(gui="edgechromium", http_server=True)  # Windows 用系统自带的 WebView2
+    else:
+        webview.start(http_server=True)  # macOS 用 Cocoa/WebKit

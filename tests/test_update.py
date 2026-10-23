@@ -111,6 +111,7 @@ def test_check_lists_setup_and_portable_assets(monkeypatch):
 def test_mode_tells_installed_from_portable(tmp_path, monkeypatch):
     monkeypatch.delattr(update.sys, "frozen", raising=False)
     assert update.mode() == ""  # 直接跑代码：没有 exe 可换
+    monkeypatch.setattr(update.sys, "platform", "win32")  # 换 exe 是 Windows 专属逻辑
     monkeypatch.setattr(update.sys, "frozen", True, raising=False)
     monkeypatch.setattr(update.sys, "executable", str(tmp_path / "caifeng.exe"))
     assert update.mode() == "portable"

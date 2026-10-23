@@ -9,6 +9,7 @@ from __future__ import annotations
 import dataclasses
 import json
 import os
+import sys
 import threading
 from pathlib import Path
 from typing import Any
@@ -26,7 +27,11 @@ def _merge(base: dict, patch: dict) -> dict:
 
 
 def read_clipboard() -> str:
-    """读剪贴板里的文字（Windows）。网页自己读剪贴板会弹权限提示，所以由这边读。"""
+    """读剪贴板里的文字。网页自己读剪贴板会弹权限提示，所以由这边读。"""
+    if sys.platform == "darwin":
+        import subprocess
+
+        return subprocess.run(["pbpaste"], capture_output=True, text=True).stdout
     import ctypes
     from ctypes import wintypes
 
@@ -146,6 +151,11 @@ class Api:
         p = Path(path)
         if not p.exists():
             return False
+        if sys.platform == "darwin":
+            import subprocess
+
+            subprocess.Popen(["open", "-R", str(p)] if p.is_file() else ["open", str(p)])  # noqa: S603, S607
+            return True
         if p.is_file():
             import subprocess
 
@@ -408,7 +418,12 @@ class Api:
         p = Path(path)
         if not p.exists():
             return False
-        os.startfile(p)  # noqa: S606
+        if sys.platform == "darwin":
+            import subprocess
+
+            subprocess.Popen(["open", str(p)])  # noqa: S603, S607
+        else:
+            os.startfile(p)  # noqa: S606
         return True
 
     def fanqie_download(self, params: dict) -> None:

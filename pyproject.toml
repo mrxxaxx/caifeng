@@ -1,6 +1,6 @@
 [project]
 name = "caifeng"
-version = "0.2.1"
+version = "0.2.2"
 description = "采风：从网站下载视频、小说和剧集"
 readme = "README.md"
 license = "MIT"

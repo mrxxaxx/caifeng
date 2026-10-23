@@ -71,6 +71,8 @@ def mode() -> str:
     """怎么换成新版：setup 安装版（exe 旁边有卸载程序）、portable 便携版；空 = 直接跑的代码，只能去发布页。"""
     if not getattr(sys, "frozen", False):
         return ""
+    if sys.platform != "win32":  # macOS 版暂不支持自动更新，去发布页手动下载
+        return ""
     return "setup" if (Path(sys.executable).parent / "unins000.exe").exists() else "portable"
 
 

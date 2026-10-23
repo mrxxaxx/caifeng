@@ -8,11 +8,15 @@ from __future__ import annotations
 import dataclasses
 import json
 import os
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-DEFAULT_ROOT = Path(os.environ.get("LOCALAPPDATA") or (Path.home() / "AppData" / "Local")) / "caifeng"
+if sys.platform == "darwin":  # macOS 的应用数据目录
+    DEFAULT_ROOT = Path.home() / "Library" / "Application Support" / "caifeng"
+else:
+    DEFAULT_ROOT = Path(os.environ.get("LOCALAPPDATA") or (Path.home() / "AppData" / "Local")) / "caifeng"
 CONFIG_FILE = DEFAULT_ROOT / "config.json"
 
 

@@ -30,6 +30,8 @@ BROWSERS = (
         (
             r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
             r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+            "/Applications/Microsoft Edge.app",  # macOS
+            str(Path.home() / "Applications/Microsoft Edge.app"),
         ),
     ),
     Browser(
@@ -40,6 +42,8 @@ BROWSERS = (
             r"C:\Program Files\Google\Chrome\Application\chrome.exe",
             r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
             str(Path.home() / r"AppData\Local\Google\Chrome\Application\chrome.exe"),
+            "/Applications/Google Chrome.app",  # macOS
+            str(Path.home() / "Applications/Google Chrome.app"),
         ),
     ),
 )
